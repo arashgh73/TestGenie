@@ -499,10 +499,11 @@ function initializeTable(tableId) {
     let tableContainerId = `table-container-${tableId}`;
     let tableContainer = document.createElement('div');
     tableContainer.className = 'table-container';
-    tableContainer.id = tableContainerId; // Use constructed ID
+    tableContainer.id = tableContainerId;
 
-    columnTypesByTableId[tableId] = ['String', 'String', 'String', 'String'];
-    
+    // Define the column types for the initial table
+    columnTypesByTableId[tableId] = ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Date'];
+
     let tableIdActual = tableId;
     let table = document.createElement('table');
     table.id = tableIdActual;
@@ -511,25 +512,29 @@ function initializeTable(tableId) {
     let header = table.createTHead();
     let row = header.insertRow(0);
 
-    for (let i = 1; i <= 4; i++) {
+    // Create header cells with dropdowns
+    for (let i = 0; i < columnTypesByTableId[tableId].length; i++) {
         let headerCell = row.insertCell(-1);
-        let dropdown = createTypeDropdown(i, tableIdActual); // Assume this function is defined elsewhere
+        let dropdown = createTypeDropdown(i, tableIdActual);
         headerCell.appendChild(dropdown);
         headerCell.dataset.tableId = tableIdActual;
-        headerCell.ondblclick = togglePrimaryKey; // Assume this function is adjusted to work with the new structure
+        headerCell.ondblclick = togglePrimaryKey;
         headerCell.classList.add('header-cell');
     }
 
     // Append the new table to the tableContainer div
-    tableContainer.appendChild(table);  
+    tableContainer.appendChild(table);
 
-    // Finally, append the tableContainer to the main container in your document
-    document.getElementById('mainContainer').appendChild(tableContainer); // Make sure you have a div with id="mainContainer" in your HTML
-
+    // Add the first row with correct values
     addRow(tableId);
+
+    // Create buttons for the table
     createTableButtons(tableIdActual, tableContainer);
 
+    // Append the tableContainer to the main container in your document
+    document.getElementById('mainContainer').appendChild(tableContainer);
 }
+
 
 // Updated createTableButtons function
 function createTableButtons(tableId, tableContainer) {
@@ -592,58 +597,43 @@ function closeAddRelationPopup() {
 
 
 function addRow(tableId) {
-    console.log('addRow triggered'); // Debugging line
     let table = document.getElementById(tableId);
     if (!table) return;
 
+    let newRow = table.insertRow(-1);
     let newRowData = [];
-    let maxAttempts = 100;
-    let attempt = 0;
-    let isUniqueRow = false;
 
-    // Get the primary key columns for this specific table
-    let primaryKeyColumns = primaryKeyColumnsByTableId[tableId] || [];
+    // Generate data based on the column types
+    columnTypesByTableId[tableId].forEach(type => {
+        newRowData.push(generateDataByType(type));
+    });
 
-    if (primaryKeyColumns.length === 0) {
-        isUniqueRow = true; // Allow to add a row without unique check
-        for (let i = 0; i < table.rows[0].cells.length; i++) {
-            newRowData.push(generateDataByType(columnTypesByTableId[tableId][i]));
-        }
-    } else {
-        // If primary keys are defined, perform the unique check
-        while (!isUniqueRow && attempt < maxAttempts) {
-            newRowData = [];
-            for (let i = 0; i < table.rows[0].cells.length; i++) {
-                newRowData.push(generateDataByType(columnTypesByTableId[tableId][i]));
-            }
-
-            isUniqueRow = isUnique(table, newRowData, primaryKeyColumns);
-            attempt++;
-            console.log('Attempt:', attempt); // Debugging line
-        }
-    }
-
-    if (isUniqueRow) {
-        let newRow = table.insertRow(-1);
-        for (let i = 0; i < newRowData.length; i++) {
-            let newCell = newRow.insertCell(-1);
-            newCell.innerHTML = newRowData[i];
-        }
-    } else {
-        console.error('Unique values could not be generated for the primary key fields.');
-    }
+    // Add the generated data to the new row
+    newRowData.forEach(data => {
+        let newCell = newRow.insertCell(-1);
+        newCell.innerHTML = data;
+    });
 }
+
 
 
 // Utility function to generate data based on type
 function generateDataByType(type) {
     switch (type) {
+        case 'Column 1':
+            return generatecolumn1(5, 7);
+        case 'Column 2':
+            return generatecolumn2();
+        case 'Column 3':
+            return getRandomCategory();        
+        case 'Column 4':
+            return getRandomType();
+        case 'Date':
+            return generateRandomDate();
         case 'String':
             return generateRandomString(1);
         case 'Number':
             return generateRandomNumber(1);
-        case 'Date':
-            return generateRandomDate();
         default:
             return '';
     }
@@ -674,13 +664,34 @@ function addColumn(tableId) {
     }
 }
 
-function generateRandomString(length) {
+function generateID(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generatecolumn1(minLength, maxLength) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
     let result = '';
+
     for (let i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
+
     return result;
+}
+
+
+function generatecolumn2() {
+    function segment(length) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+    // return `${segment(8)}-${segment(4)}-${segment(4)}-${segment(12)}`;
+    return `${segment(6)}-${segment(6)}-${segment(2)}-${segment(2)}`;
 }
 
 function generateRandomNumber(length) {
@@ -696,20 +707,31 @@ function generateRandomDate() {
     return date.toISOString().split('T')[0]; // Returns a date string in YYYY-MM-DD format
 }
 
+function getRandomCategory() {
+    const categories = ['Category A', 'Category B', 'Category C', 'Category D'];
+    return categories[Math.floor(Math.random() * categories.length)];
+}
+
+function getRandomType() {
+    const categories = ['Type I', 'Type II', 'Type III', 'Type IV', 'Type V', 'Type VI'];
+    return categories[Math.floor(Math.random() * categories.length)];
+}
 
 function createTypeDropdown(columnNumber, tableId) {
     const select = document.createElement('select');
     select.dataset.tableId = tableId;
 
-    const types = ['String', 'Number', 'Date']; // Add more types as needed
+    const types = ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Date', 'String', 'Number'];
     types.forEach(type => {
         const option = document.createElement('option');
         option.value = type;
         option.text = type;
         select.appendChild(option);
     });
-    select.value = 'String';
-    select.onchange = changeFieldType; // Function to handle type change
+
+    // Set the default value for the dropdown
+    select.value = columnTypesByTableId[tableId][columnNumber] || 'String';
+    select.onchange = changeFieldType;
 
     return select;
 }
@@ -732,16 +754,28 @@ function changeFieldType(e) {
     for (let i = 1; i < table.rows.length; i++) {
         let cell = table.rows[i].cells[columnIndex];
         switch (newType) {
+            case 'Column 1':
+                cell.innerHTML = generatecolumn1(5,7)
+                break;
+            case 'Column 2':
+                cell.innerHTML = generatecolumn2();
+                break;
+            case 'Column 3':
+                cell.innerHTML = getRandomCategory();
+                break;
+            case 'Column 4':
+                cell.innerHTML = getRandomType();
+                break;
+            case 'Date':
+                cell.innerHTML = generateRandomDate();
+                break;
             case 'String':
                 cell.innerHTML = generateRandomString(1);
                 break;
             case 'Number':
                 cell.innerHTML = generateRandomNumber(1);
                 break;
-            case 'Date':
-                cell.innerHTML = generateRandomDate();
-                break;
+            
         }
     }
 }
-
